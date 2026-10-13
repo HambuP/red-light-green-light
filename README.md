@@ -71,7 +71,7 @@ All tuning values (light durations, grace period, threshold, zone sizes, voice s
 Requires Python 3.9+ and a webcam. Tested on macOS with Python 3.9.6.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/red-light-green-light.git
+git clone https://github.com/HambuP/red-light-green-light.git
 cd red-light-green-light
 python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
