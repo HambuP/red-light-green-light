@@ -1,6 +1,8 @@
+import os
 import time
 import random
 import subprocess
+from datetime import datetime
 import cv2
 from ultralytics import YOLO
 
@@ -13,8 +15,10 @@ START_HOLD = 2.0                  # seconds to stand in the start box before the
 START_ZONE_X = 0.25               # start box = left 25% of the screen
 FINISH_X = 0.75                   # finish line at 75% of the screen
 VOICE_RATE = "250"                # speaking speed for the Mac voice (default is ~175)
+OUTPUT_DIR = "output"
 WINDOW = "Red Light, Green Light"
 
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 click = None   # last mouse click position, filled in by on_mouse
 
 def on_mouse(event, x, y, flags, param):
@@ -23,10 +27,22 @@ def on_mouse(event, x, y, flags, param):
         click = (x, y)
 
 def speak(text):
-    subprocess.Popen(["say", "-r", VOICE_RATE, text])   # runs in the background, doesn't block
+    try:
+        subprocess.Popen(["say", "-r", VOICE_RATE, text])   # runs in the background
+    except FileNotFoundError:
+        pass   # 'say' only exists on macOS; on other systems the game just runs silently
+
+def log_event(text):
+    line = f"{datetime.now().strftime('%H:%M:%S')}  {text}"
+    print(line)
+    with open(os.path.join(OUTPUT_DIR, "events.log"), "a") as f:
+        f.write(line + "\n")
 
 model = YOLO("yolov8n.pt")
 cap = cv2.VideoCapture(0)
+if not cap.isOpened():
+    print("Error: could not open camera.")
+    exit(1)
 cv2.namedWindow(WINDOW)
 cv2.setMouseCallback(WINDOW, on_mouse)
 
@@ -36,6 +52,10 @@ next_switch = 0
 red_start = 0
 frozen_x = None
 in_zone_since = None   # time when the player entered the start box
+game_start = 0         # time when the current game began
+save_shot = False      # set to True when we want to save this frame
+
+log_event("Program started - waiting for player")
 
 while True:
     ok, frame = cap.read()
@@ -60,6 +80,7 @@ while True:
             light = "GREEN"
             next_switch = now + random.uniform(GREEN_MIN, GREEN_MAX)
         speak(light + " light")
+        log_event(light + " light")
 
     # --- Detection ---
     result = model(frame, classes=[0], conf=0.5, verbose=False)[0]
@@ -81,8 +102,10 @@ while True:
                 elif now - in_zone_since >= START_HOLD:
                     state = "PLAYING"
                     light = "GREEN"
+                    game_start = now
                     next_switch = now + random.uniform(GREEN_MIN, GREEN_MAX)
                     speak("Go! Green light")
+                    log_event("Game started - GREEN light")
             else:
                 in_zone_since = None
 
@@ -93,9 +116,13 @@ while True:
                 elif abs(center_x - frozen_x) > MOVE_THRESHOLD:
                     state = "ELIMINATED"
                     speak("Eliminated")
+                    log_event(f"ELIMINATED - moved {abs(center_x - frozen_x)} px during red light")
+                    save_shot = True
             if state == "PLAYING" and center_x > finish_x:
                 state = "WON"
                 speak("You win")
+                log_event(f"WON in {now - game_start:.1f} seconds")
+                save_shot = True
 
     # --- Screen text for each state ---
     if state == "WAITING":
@@ -124,6 +151,13 @@ while True:
     cv2.rectangle(frame, (bx1, by1), (bx2, by2), (60, 60, 60), -1)
     cv2.putText(frame, "RESTART", (bx1 + 30, by1 + 35), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
+    # --- Save screenshot (after all drawing, so the text is included) ---
+    if save_shot:
+        filename = os.path.join(OUTPUT_DIR, f"{state.lower()}_{datetime.now().strftime('%H%M%S')}.png")
+        cv2.imwrite(filename, frame)
+        log_event(f"Saved screenshot {filename}")
+        save_shot = False
+
     restart = False
     if click is not None:
         cx, cy = click
@@ -143,6 +177,8 @@ while True:
         light = "GREEN"
         frozen_x = None
         in_zone_since = None
+        log_event("Restart - waiting for player")
 
 cap.release()
 cv2.destroyAllWindows()
+log_event("Program closed")
