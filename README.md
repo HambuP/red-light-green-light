@@ -10,7 +10,7 @@ The computer announces each light out loud, so the game can be played by sound a
 |---|---|
 | ![Win screenshot](samples/won.png) | ![Elimination screenshot](samples/eliminated.png) |
 
-- Demo video: [`samples/demo.mov`](samples/demo.mov)
+- Demo video: [`samples/demo.mp4`](samples/demo.mp4)
 - Example event log from real games: [`samples/events.log`](samples/events.log)
 
 ## What it detects
