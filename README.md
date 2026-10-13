@@ -1,8 +1,8 @@
 # Red Light, Green Light 🚦
 
-A webcam game powered by object detection. A pretrained YOLO model finds the player in a live camera feed, and custom game logic turns those detections into the classic playground game: walk toward the finish line on **GREEN LIGHT**, freeze on **RED LIGHT**, and if the camera catches you moving, you're **ELIMINATED**.
+So, this is a small game that uses the webcam and object detection. I use a pretrained YOLO model whose job here is to find the player live in the camera feed, and the game turns that detection into the classic, simple game of Red Light, Green Light: if the camera catches you moving, you lose.
 
-The computer announces each light out loud, so the game can be played by sound alone, without looking at the screen.
+Also, the computer announces everything out loud, so technically you can play using only the sound, without looking at the screen.
 
 ## Demo
 
@@ -27,7 +27,7 @@ The program detects **people** (COCO class 0, `person`) in a live webcam feed. I
 
 ### Design note: why a game and not a focus tracker
 
-My first idea was a study focus tracker that detects my phone on my desk. When I tested it, I realized a laptop webcam points at the user's face, not at the desk, so a phone being used on the desk is never in view. Instead of forcing an idea the hardware couldn't support, I picked a design that fits what a front-facing camera sees well: a full person moving across the frame.
+My first idea was a kind of focus tracker: something that watches you while you study and, if it sees you using your phone, detects it and warns you. That idea changed pretty quickly, though, because the laptop camera couldn't see the phone on the desk. So I went for something that's easier for a laptop camera to see and that actually looks good on screen: a person moving across the frame seemed perfect for that, and yeah.
 
 ## How the code processes input and detections
 
